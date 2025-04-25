@@ -1,0 +1,4 @@
+<resources>
+    <declare-styleable name="LineChart">
+    </declare-styleable>
+</resources>
