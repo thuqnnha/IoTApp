@@ -1,7 +1,27 @@
 package com.example.iotapp;
 
+import android.app.AlarmManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 import android.app.DatePickerDialog;
+
 import android.database.SQLException;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,14 +36,19 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.Manifest;
 
 public class RegisterFragment extends Fragment {
     private Spinner spinnerKhoa, spinnerBacSi,spinnerTime;
@@ -36,16 +61,21 @@ public class RegisterFragment extends Fragment {
     private String selectedTime = "";
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final int NOTIFICATION_PERMISSION_CODE = 1001;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_register, container, false);
+
+        createNotificationChannel();  // Tạo notification channel
+        checkAndRequestNotificationPermission();  // Kiểm tra quyền nếu Android 13+
         // Tìm Button chọn ngày
         Button btnPickDate = view.findViewById(R.id.btnPickDate);
         //btnPickDate.setText("Ngày: --/--/----"); // Giá trị mặc định
         // Bắt sự kiện khi nhấn vào nút
+        //scheduleReminder("2025-04-30", "14:50", 101);
         btnPickDate.setOnClickListener(v -> {
             Calendar calendar = Calendar.getInstance();
             int year = calendar.get(Calendar.YEAR);
@@ -92,10 +122,48 @@ public class RegisterFragment extends Fragment {
             String gio = selectedTime;
             String trangThai = "false"; // Trang thái cố định là 'false'
 
-            insertLichHen(maBS, maBN, selectedDate, gio, trangThai);
+            insertLichHen(maBS, maBN, selectedDate, selectedTime, trangThai);
+
+            // Đặt lịch thông báo trước 30 phút
+            scheduleReminder(selectedDate, selectedTime, 101);
         });
         return view;
     }
+    private void checkAndRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(requireActivity(),
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_PERMISSION_CODE);
+            }
+        }
+    }
+    // Gửi kết quả yêu cầu quyền
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(requireContext(), "Đã cấp quyền gửi thông báo", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "Không thể gửi thông báo nếu không có quyền", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "ReminderChannel";
+            String description = "Kênh thông báo nhắc lịch hẹn";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel("reminder_channel", name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
     private void loadKhoaFromDatabase() {
         executorService.execute(() -> {
             listKhoa = DatabaseHelper.getListKhoa();
@@ -200,4 +268,44 @@ public class RegisterFragment extends Fragment {
         super.onDestroy();
         executorService.shutdown(); // Đừng quên tắt khi fragment bị destroy
     }
+    private void scheduleReminder(String ngay, String khungGio, int requestCode) {
+        String[] timeParts = khungGio.split(":");
+        int hour = Integer.parseInt(timeParts[0]);
+        int minute = Integer.parseInt(timeParts[1]);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Calendar calendar = Calendar.getInstance();
+        try {
+            Date date = sdf.parse(ngay);
+            calendar.setTime(date);
+            calendar.set(Calendar.HOUR_OF_DAY, hour);
+            calendar.set(Calendar.MINUTE, minute);
+            calendar.set(Calendar.SECOND, 0);
+
+            // Trừ 30 phút
+            calendar.add(Calendar.MINUTE, -30);//thoi gian
+
+            Intent intent = new Intent(requireContext(), ReminderReceiver.class);
+            intent.putExtra("info", "Bạn có lịch hẹn lúc " + khungGio);
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    requireContext(),
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null) {
+                alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        calendar.getTimeInMillis(),
+                        pendingIntent
+                );
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

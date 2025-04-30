@@ -2,6 +2,7 @@ package com.example.iotapp;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -32,17 +33,25 @@ public class HomeFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Sử dụng ViewModel để tránh tạo lại MQTT mỗi lần vào Fragment
+        // Sử dụng ViewModel để lấy lại MQTT handler
         MqttViewModel mqttViewModel = new ViewModelProvider(requireActivity()).get(MqttViewModel.class);
         mqttHandler = mqttViewModel.getMqttHandler(getContext());
+
+        // Lấy maDH từ Bundle truyền từ MainActivity
+        String maDH = getArguments() != null ? getArguments().getString("maDH") : null;
+
+        if (maDH != null && mqttHandler != null) {
+            String topic = maDH + "_csdl_receive";
+            mqttHandler.subscribe(topic); // Đăng ký topic theo tài khoản đăng nhập
+            Log.d("HomeFragment", "Subscribed to topic: " + topic);
+        } else {
+            Log.e("HomeFragment", "maDH null hoặc mqttHandler null");
+        }
 
         // Khởi tạo LineChart
         lineChart1 = view.findViewById(R.id.lineChart1);
         lineChart2 = view.findViewById(R.id.lineChart2);
         setupLineCharts();
-
-        // Đăng ký nhận dữ liệu từ MQTT (chỉ cần thực hiện một lần)
-        mqttHandler.subscribe("0000503341_csdl_receive");
 
         // Thiết lập callback nhận dữ liệu MQTT
         mqttHandler.setCallback(new MqttCallback() {
@@ -58,19 +67,12 @@ public class HomeFragment extends Fragment {
                                 float heartRate = Float.parseFloat(values[0]);
                                 float oxygenLevel = Float.parseFloat(values[1]);
 
-                                // Xóa dữ liệu cũ nếu vượt quá 50 điểm
-                                if (dataSet1.getEntryCount() > 50) {
-                                    dataSet1.removeFirst();
-                                }
-                                if (dataSet2.getEntryCount() > 50) {
-                                    dataSet2.removeFirst();
-                                }
+                                if (dataSet1.getEntryCount() > 50) dataSet1.removeFirst();
+                                if (dataSet2.getEntryCount() > 50) dataSet2.removeFirst();
 
-                                // Thêm dữ liệu vào biểu đồ
                                 dataSet1.addEntry(new Entry(timeIndex, heartRate));
                                 dataSet2.addEntry(new Entry(timeIndex, oxygenLevel));
 
-                                // Cập nhật biểu đồ (tối ưu hiệu suất)
                                 lineData1.notifyDataChanged();
                                 lineData2.notifyDataChanged();
                                 lineChart1.notifyDataSetChanged();
@@ -89,7 +91,7 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void connectionLost(Throwable cause) {
-                // Xử lý mất kết nối nếu cần
+                Log.e("HomeFragment", "MQTT connection lost: " + cause.getMessage());
             }
 
             @Override
@@ -114,11 +116,17 @@ public class HomeFragment extends Fragment {
 
         lineChart1.setData(lineData1);
         lineChart2.setData(lineData2);
+
+        lineChart1.getDescription().setEnabled(false);
+        lineChart1.animateX(1000);
+        lineChart2.getDescription().setEnabled(false);
+        lineChart2.animateX(1000);
+
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Không disconnect MQTT để tránh mất dữ liệu khi quay lại Fragment
+        // Không ngắt kết nối MQTT để giữ kết nối liên tục
     }
 }

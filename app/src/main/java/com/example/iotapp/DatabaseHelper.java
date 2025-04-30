@@ -125,6 +125,34 @@ public class DatabaseHelper {
         return list;
     }
 
+    public static boolean checkLogin(String inputMaDH, String inputPass) {
+        Connection conn;
+        boolean isValid = false;
+
+        try {
+            conn = connect();
+            if (conn != null) {
+                String query = "SELECT * FROM dongho WHERE maDH = '" + inputMaDH + "' AND pass = '" + inputPass + "'";
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query);
+
+                if (rs.next()) {
+                    // Có ít nhất một kết quả khớp => hợp lệ
+                    isValid = true;
+                }
+
+                rs.close();
+                stmt.close();
+                conn.close();
+            }
+        } catch (Exception e) {
+            Log.e("DatabaseHelper", "checkLogin Error: " + e.getMessage());
+        }
+
+        return isValid;
+    }
+
+
 
 }
 

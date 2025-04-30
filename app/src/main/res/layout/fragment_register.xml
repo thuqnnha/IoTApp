@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".RegisterFragment">
+    tools:context=".RegisterFragment"
+    android:background="#E0F7FA">
 
     <Spinner
         android:id="@+id/spinnerBacSi"
@@ -13,7 +14,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.87"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/spinner_background"
+        android:padding="8dp"
+        />
 
     <Spinner
         android:id="@+id/spinnerTime"
@@ -24,7 +28,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.876"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/spinner_background"
+        android:padding="8dp"
+        />
 
     <Spinner
         android:id="@+id/spinnerKhoa"
@@ -34,7 +41,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.876"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/spinner_background"
+        android:padding="8dp"
+        />
 
     <TextView
         android:id="@+id/textView3"
@@ -124,6 +134,7 @@
         android:textSize="25dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/spinnerTime" />
+        app:layout_constraintTop_toBottomOf="@+id/spinnerTime"
+        android:background="@drawable/button_bg"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

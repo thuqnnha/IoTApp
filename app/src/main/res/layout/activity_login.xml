@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#E3F2FD">
+    <!-- Tên ứng dụng (Logo hoặc tên) -->
+    <TextView
+        android:id="@+id/appName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đăng Nhập"
+        android:textSize="40sp"
+        android:textColor="#6200EE"
+        android:layout_marginBottom="40dp"
+        android:fontFamily="sans-serif-medium"/>
+
+    <!-- Tài khoản -->
+    <EditText
+        android:id="@+id/edtUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tài khoản"
+        android:layout_marginTop="14dp"
+        android:padding="16dp"
+        android:textColor="#000000"
+        android:textColorHint="#B0B0B0"
+        android:background="@drawable/edittext_bg"
+        android:fontFamily="sans-serif-medium"
+        android:drawableStart="@drawable/ic_user"
+        android:drawablePadding="10dp" />
+
+    <!-- Mật khẩu -->
+    <EditText
+        android:id="@+id/edtPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Mật khẩu"
+        android:inputType="textPassword"
+        android:layout_marginTop="16dp"
+        android:padding="16dp"
+        android:textColor="#000000"
+        android:textColorHint="#B0B0B0"
+        android:background="@drawable/edittext_bg"
+        android:fontFamily="sans-serif-medium"
+        android:drawableStart="@drawable/ic_lock"
+        android:drawablePadding="10dp" />
+
+    <!-- Nút Đăng nhập -->
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Đăng nhập"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:layout_marginTop="24dp"
+        android:padding="12dp"
+        android:background="@drawable/button_bg"/>
+
+    <!-- Quên mật khẩu -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Quên mật khẩu?"
+        android:textColor="#6200EE"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:clickable="true"
+        android:onClick="onForgotPasswordClick" />
+
+</LinearLayout>

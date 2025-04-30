@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#FF6F00</color>  <!-- Màu cam đậm -->
+    <color name="colorPrimaryDark">#FF3D00</color>  <!-- Màu cam tối hơn -->
+    <color name="colorAccent">#00C853</color>  <!-- Màu xanh lá -->
 </resources>
