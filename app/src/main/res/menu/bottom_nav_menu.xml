@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/nav_home"
-        android:title="Home"
+        android:title="Sức khỏe"
         android:icon="@drawable/ic_home"/>
     <item android:id="@+id/nav_settings"
         android:title="Đặt lịch"
