@@ -25,50 +25,50 @@ public class HomeFragment extends Fragment {
     private LineData lineData1, lineData2;
     private int timeIndex = 0;
     private MqttHandler mqttHandler;
+    private String maDH;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Sử dụng ViewModel để lấy lại MQTT handler
+        // Lấy MQTT handler từ ViewModel
         MqttViewModel mqttViewModel = new ViewModelProvider(requireActivity()).get(MqttViewModel.class);
         mqttHandler = mqttViewModel.getMqttHandler(getContext());
 
-        // Lấy maDH từ Bundle truyền từ MainActivity
-        String maDH = getArguments() != null ? getArguments().getString("maDH") : null;
-
-        if (maDH != null && mqttHandler != null) {
-            String topic = maDH + "_csdl_receive";
-            mqttHandler.subscribe(topic); // Đăng ký topic theo tài khoản đăng nhập
-            Log.d("HomeFragment", "Subscribed to topic: " + topic);
-        } else {
-            Log.e("HomeFragment", "maDH null hoặc mqttHandler null");
+        // Lấy maDH từ arguments
+        if (getArguments() != null) {
+            maDH = getArguments().getString("maDH", null);
         }
 
-        // Khởi tạo LineChart
-        lineChart1 = view.findViewById(R.id.lineChart1);
-        lineChart2 = view.findViewById(R.id.lineChart2);
-        setupLineCharts();
+//        // Kiểm tra maDH và mqttHandler
+//        if (maDH != null && mqttHandler != null) {
+            String topic = "0000503341_csdl_receive";
+            mqttHandler.subscribe(topic);
+            Log.d("HomeFragment", "Subscribed to topic: " + topic);
 
-        // Thiết lập callback nhận dữ liệu MQTT
-        mqttHandler.setCallback(new MqttCallback() {
-            @Override
-            public void messageArrived(String topic, MqttMessage message) {
-                if (getActivity() != null) {
+            mqttHandler.setCallback(new MqttCallback() {
+                @Override
+                public void messageArrived(String topic, MqttMessage message) {
+                    if (getActivity() == null) return;
+
                     getActivity().runOnUiThread(() -> {
-                        String receivedMessage = new String(message.getPayload()).trim();
-                        String[] values = receivedMessage.split("\\s+");
+                        String payload = new String(message.getPayload()).trim();
+                        String[] values = payload.split("\\s+");
 
                         if (values.length >= 2) {
                             try {
                                 float heartRate = Float.parseFloat(values[0]);
                                 float oxygenLevel = Float.parseFloat(values[1]);
 
-                                if (dataSet1.getEntryCount() > 50) dataSet1.removeFirst();
-                                if (dataSet2.getEntryCount() > 50) dataSet2.removeFirst();
+                                // Giới hạn số điểm dữ liệu tối đa 50
+                                if (dataSet1.getEntryCount() > 50) {
+                                    dataSet1.removeFirst();
+                                    dataSet2.removeFirst();
+                                }
 
                                 dataSet1.addEntry(new Entry(timeIndex, heartRate));
                                 dataSet2.addEntry(new Entry(timeIndex, oxygenLevel));
@@ -77,27 +77,34 @@ public class HomeFragment extends Fragment {
                                 lineData2.notifyDataChanged();
                                 lineChart1.notifyDataSetChanged();
                                 lineChart2.notifyDataSetChanged();
+
                                 lineChart1.moveViewToX(timeIndex);
                                 lineChart2.moveViewToX(timeIndex);
-
                                 timeIndex++;
                             } catch (NumberFormatException e) {
-                                e.printStackTrace();
+                                Log.e("HomeFragment", "Parse error: " + e.getMessage());
                             }
                         }
                     });
                 }
-            }
 
-            @Override
-            public void connectionLost(Throwable cause) {
-                Log.e("HomeFragment", "MQTT connection lost: " + cause.getMessage());
-            }
+                @Override
+                public void connectionLost(Throwable cause) {
+                    Log.e("HomeFragment", "MQTT connection lost: " + cause.getMessage());
+                }
 
-            @Override
-            public void deliveryComplete(IMqttDeliveryToken token) {
-            }
-        });
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) {}
+            });
+
+//        } else {
+//            Log.e("HomeFragment", "maDH hoặc mqttHandler null");
+//        }
+
+        // Gán biểu đồ
+        lineChart1 = view.findViewById(R.id.lineChart1);
+        lineChart2 = view.findViewById(R.id.lineChart2);
+        setupLineCharts();
 
         return view;
     }
@@ -106,10 +113,12 @@ public class HomeFragment extends Fragment {
         dataSet1 = new LineDataSet(new ArrayList<>(), "Nhịp tim");
         dataSet1.setColor(Color.RED);
         dataSet1.setValueTextColor(Color.BLACK);
+        dataSet1.setDrawValues(false); // Ẩn số trên điểm
 
         dataSet2 = new LineDataSet(new ArrayList<>(), "Nồng độ Oxy");
         dataSet2.setColor(Color.BLUE);
         dataSet2.setValueTextColor(Color.BLACK);
+        dataSet2.setDrawValues(false); // Ẩn số trên điểm
 
         lineData1 = new LineData(dataSet1);
         lineData2 = new LineData(dataSet2);
@@ -118,15 +127,15 @@ public class HomeFragment extends Fragment {
         lineChart2.setData(lineData2);
 
         lineChart1.getDescription().setEnabled(false);
+        lineChart1.setTouchEnabled(true);
+        lineChart1.setDragEnabled(true);
+        lineChart1.setScaleEnabled(true);
         lineChart1.animateX(1000);
+
         lineChart2.getDescription().setEnabled(false);
+        lineChart2.setTouchEnabled(true);
+        lineChart2.setDragEnabled(true);
+        lineChart2.setScaleEnabled(true);
         lineChart2.animateX(1000);
-
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        // Không ngắt kết nối MQTT để giữ kết nối liên tục
     }
 }

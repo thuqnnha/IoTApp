@@ -2,6 +2,7 @@ package com.example.iotapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -25,7 +26,7 @@ public class LoginActivity extends AppCompatActivity {
         edtUsername = findViewById(R.id.edtUsername);
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
-        edtUsername.setText("0000503342");
+        edtUsername.setText("0000503341");
         edtPassword.setText("1");
         btnLogin.setOnClickListener(v -> {
             String username = edtUsername.getText().toString().trim();
@@ -39,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
             // Chạy truy vấn trong luồng nền
             executor.execute(() -> {
                 boolean isValid = DatabaseHelper.checkLogin(username, password);
-
+                Log.d("", "username " + username);
                 runOnUiThread(() -> {
                     if (isValid) {
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
